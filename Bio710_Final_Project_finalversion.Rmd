@@ -36,7 +36,7 @@ library(zoo)
 
 ```{r}
 # LOAD DATASET
-krill_data <- read.csv("/Users/california/Documents/SFSU/IMES/Research/Data/UPDATED_krill species for Giusi 12052023 copy.csv")
+krill_data <- read.csv("data/UPDATED_krill species for Giusi 12052023 copy.csv")
 ```
 
 
