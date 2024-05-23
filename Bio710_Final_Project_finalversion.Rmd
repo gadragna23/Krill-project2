@@ -1,0 +1,142 @@
+---
+title: "*Euphausia pacifica* and *Thysanoessa spinifera* distribution and abundance in the central California Current Ecosystem in relation to climate indices"
+author: "Giusi Adragna"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+### BACKGROUND ###
+
+The California Current ecosystem (CCE) is one of the most biologically productive marine area in the world (Santora et al., 2017). Wind-driven coastal upwellings supply nutrient-rich water to the surface, stimulating phytoplankton growth, which forms the base of the food chain in marine ecosystems. Some of the most biologically productive regions of the CCE are near San Francisco Bay (Rockwood et al., 2020). Because of their biological significance, these areas have been designated as sanctuaries—more precisely, the Gulf of the Farallones, Cordell Bank, and Monterey Bay National Marine Sanctuary (Rockwood et al., 2020).
+
+Krill is an essential element of marine ecosystems and a major food source for many species of fish, seabirds, and marine mammals (Robertson and Bjorkstedt, 2020). In the CCE, *Euphausia pacifica* (EPAC) and *Thysanoessa spinifera* (ESPIN) are the most abundant krill species. According to Robertson and Bjorkstedt (2020), warmer ocean temperatures have a significant impact on krill throughout the CCE region. Given krill's vital role in marine webs and ecosystems as the main staple food in the diet of many marine organisms, it is important to understand how the temporal-spatial distribution of different krill species will be affected by increasingly warmer temperatures since any change will also affect marine predators that rely on them (Cimino et al., 2020).
+
+### RESEARCH GOALS ###
+My goal is to analyze whether a relationship between EPAC and TSPIN and some important climate indices is present. Shifts in magnitude and signs of these indices are associated with variations in krill abundance (Di Lorenzo et al., 2008). In particular, for this first analysis, I will look into the Pacific Decadal Oscillation (PDO).
+
+### AIM 1 ###
+Study the relationship between EPAC, TSPIN, and PDO.
+Hyp0: There is no correlation between EPAC, TSPIN and PDO.
+Alt: There is a correlation between EPAC, TSPIN and PDO.
+
+### APPROACH ###
+I will clean and organize my data in a way that will allow me to plot and see  at the same time the three variables variation between 2005 and 2022 in order to have a visual. I will then calculate the correlation strength using the Spearman method for non parametric relationship.
+
+### ANALYSIS ###
+
+```{r}
+# LOAD PACKAGES
+library(tidyverse)
+library(corrplot)
+library(RColorBrewer)
+library(dygraphs)
+library(zoo)
+```
+
+
+```{r}
+# LOAD DATASET
+krill_data <- read.csv("/Users/california/Documents/SFSU/IMES/Research/Data/UPDATED_krill species for Giusi 12052023 copy.csv")
+```
+
+
+### DATA DESCRIPTION ###
+
+The dataset contains data from the ACCESS (Applied California Current Ecosystem Studies) cruises between 2005 and 2022. Data include:
+- Cruise number
+- Year and Month
+- 14 krill species 
+- PDO, NPGO, ONI, CUTI, BEUTI, UI values
+
+
+```{r}
+# Add month abbreviation
+krill_data$Month <- month.abb[krill_data$Month]
+
+# Add season
+krill_data <- krill_data %>% 
+  mutate(Season = case_when(
+    Month %in% c("Feb") ~ "Winter",
+    Month %in% c("Apr", "May", "Jun")  ~ "Spring",
+    Month %in% c("Jul") ~ "Summer",
+    Month %in% c("Sep", "Oct") ~ "Fall"
+  ))
+# Delete year 2004  
+krill_data <- krill_data[!(krill_data$Year %in% "2004"),]
+
+# Factor the months
+krill_data$Season <- factor(krill_data$Season, levels = c("Winter", "Spring", "Summer", "Fall"))
+
+# SELECT COLUMNS OF INTEREST
+krill_data <- krill_data[,-c(5:17)]
+krill_data <- krill_data[-c(60:120),]
+```
+
+
+```{r}
+# SUBSET BY SEASON
+spring <- krill_data %>% 
+  filter(Season == "Spring")
+spring$Month <- factor(spring$Month, levels = c("Apr", "May", "Jun"))
+
+summer <- krill_data %>% 
+  filter(Season == "Summer")
+
+fall <- krill_data %>% 
+  filter(Season == "Fall")
+fall$Month <- factor(fall$Month, levels = c("Sep", "Oct"))
+```
+
+
+```{r}
+### SPRING
+spring2 <- spring[, c(2:6)]
+spring2_long <- spring2 %>% 
+  pivot_longer(cols=c(3:5),
+               names_to = "Variable",
+               values_to = "Value")
+spring2_long$Variable <- factor(spring2_long$Variable, levels=c("PDO", "Euphausia.pacifica", "Thysanoessa.spinifera"))
+
+ggplot(data=spring2_long, aes(Year, Value)) +
+  geom_line() +
+  facet_wrap(~Variable, scales="free_y", ncol=1) +
+  scale_x_continuous(breaks=seq(2005,2022,1)) +
+  theme(axis.text.x = element_text(angle=90, vjust=0.5, hjust=1)) +
+  labs(title="Spring 2005-2022") +
+  geom_vline(xintercept =c(2014,2016), col="red", linetype = "dashed")
+```
+
+
+```{r}
+# CORRELATION TESTS #
+cor.test(krill_data$PDO, krill_data$Euphausia.pacifica)
+
+cor.test(krill_data$PDO, krill_data$Thysanoessa.spinifera)
+```
+
+### PDO and EPAC = p-value = 0.7766 ### 
+### PDO and TSPIN = p-value = 0.8179 ###
+
+
+### DISCUSSION ###
+
+The plot shows values for PDO, Euphausia pacifica, and Thysanoessa spinifera in the spring months (April and May) between 2005 and 2022. The PDO value range is [-2,2], with negative and positive values representing the cool and warm phases. In the plot, I highlighted the years between 2014 and 2016, when the marine heatwave hit and the PDO was at one of the highest positive values. Since warm temperatures have a negative impact on krill, I was expecting to see both the E. pacifica and T. spinifera lines going down rather than up. Another significant observation is between 2019 and 2021, when the PDO value went down, indicating a cool phase, while both E. pacifica and T. spinifera lines went up. In this case, the data confirm the hypothesis of a negative correlation between PDO and the two krill species' presence. In 2021-2022, we can observe the same negative correlation, with the PDO line going up this time and E. pacifica and T. spinifera lines going down. 
+I performed a correlation test, which gave me a p-value of 0.7766 for PDO and E. pacifica and 0.8179 for PDO and E. spinifera. This means there is no strong correlation, which seems appropriate, considering the years between 2005 and 2014 do not show any particular pattern. 
+
+
+### NEXT STEPS ###
+
+My next step will be to do a similar plot but using the other indices (NPGO, ONI, CUTI, BEUTI, and UI) and identify patterns. 
+
+
+### LITERATURE CITATIONS ###
+Cimino, M. A., Santora, J. A., Schroeder, I., Sydeman, W., Jacox, M. G., Hazen, E. L., & Bograd, S. J. (2020). Essential krill species habitat resolved by seasonal upwelling and ocean circulation models within the large marine ecosystem of the California Current System. Ecography, 43(10), 1536–1549. https://doi.org/10.1111/ecog.05204
+
+Di Lorenzo, E., Schneider, N., Cobb, K. M., Franks, P. J. S., Chhak, K., Miller, A. J., McWilliams, J. C., Bograd, S. J., Arango, H., Curchitser, E., Powell, T. M., & Rivière, P. (2008). North Pacific Gyre Oscillation links ocean climate and ecosystem change. Geophysical Research Letters, 35(8), 2007GL032838. https://doi.org/10.1029/2007GL032838
+
+Robertson, R. R., & Bjorkstedt, E. P. (2020). Climate-driven variability in Euphausia pacifica size distributions off northern California. Progress in Oceanography, 188, 102412. https://doi.org/10.1016/j.pocean.2020.102412
+
+Rockwood, R. C., Elliott, M. L., Saenz, B., Nur, N., & Jahncke, J. (2020). Modeling predator and prey hotspots: Management implications of baleen whale co-occurrence with krill in Central California. PLOS ONE, 15(7), e0235603. https://doi.org/10.1371/journal.pone.0235603
+
+Santora, J., Hazen, E., Schroeder, I., Bograd, S., Sakuma, K., & Field, J. (2017). Impacts of ocean climate variability on biodiversity of pelagic forage species in an upwelling ecosystem. Marine Ecology Progress Series, 580, 205–220. https://doi.org/10.3354/meps12278
+
